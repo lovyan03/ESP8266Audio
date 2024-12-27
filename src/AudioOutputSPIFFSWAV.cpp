@@ -23,7 +23,11 @@
 #include <Arduino.h>
 #include <FS.h>
 #ifdef ESP32
-#include "SPIFFS.h"
+#if __has_include(<LittleFS.h>)
+#include <LittleFS.h>
+#elif __has_include(<SPIFFS.h>)
+#include <SPIFFS.h>
+#endif
 #endif
 
 // Yes, I know SPIFFS is deprecated
@@ -49,8 +53,13 @@ bool AudioOutputSPIFFSWAV::begin()
   memset(wavHeader, 0, sizeof(wavHeader));
 
   if (f) return false; // Already open!
+#if __has_include(<LittleFS.h>)
+  LittleFS.remove(filename);
+  f = LittleFS.open(filename, "w+");
+#elif __has_include(<SPIFFS.h>)
   SPIFFS.remove(filename);
   f = SPIFFS.open(filename, "w+");
+#endif
   if (!f) return false;
   
   // We'll fix the header up when we close the file
